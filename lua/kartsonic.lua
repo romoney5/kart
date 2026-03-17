@@ -32,6 +32,7 @@ local DAT_SRB2KART = 1 --regular srb2kart
 local DAT_RINGRACERS = 2 --ring racers character
 local DAT_TAKISKART = 3 --takis kart
 local DAT_TAKISKART_L = 4 --takis kart legacy, used by soap and takis
+local DAT_RUSHCHARS = 5 --marine boat jetski bicycle motorbike retro
 
 local data = {}
 data.sonic = {kartspeed = 8, kartweight = 2, translation = nil, t = DAT_TAKISKART}
@@ -44,22 +45,23 @@ end
 
 --automatically add compatibility for srb2kart character packs, addonloaded apparently is run before any skins are allocated
 addHook("ThinkFrame",do
-	for i=0,#skins-1
+	for i=0, #skins-1
 		if not skins[i] break end
 		local skin = skins[i]
 		local t = TakisKart_KarterData and TakisKart_KarterData[skin.name] and (not data[skin.name] or not (data[skin.name].t == DAT_TAKISKART or data[skin.name].t == DAT_TAKISKART_L))
 		if not data[skin.name] or t
-			if (not data[skin.name] and (skin.sprites[SPR2_PLAY] or skin.sprites[SPR2_STIN])) or t
+			if (not data[skin.name] and (skin.sprites[SPR2_JSKI] or skin.sprites[SPR2_PLAY] or skin.sprites[SPR2_STIN])) or t
 				local type = DAT_STAND
-				local speed,weight = 5,5
+				local speed, weight = 5, 5
+				if skin.sprites[SPR2_JSKI].numframes > 0 type = DAT_RUSHCHARS end
 				if skin.sprites[SPR2_PLAY].numframes > 0 type = DAT_SRB2KART end
 				if skin.sprites[SPR2_STIN].numframes > 0 type = DAT_RINGRACERS end
 				local takis = TakisKart_KarterData and TakisKart_KarterData[skin.name]
 				if takis
 					type = takis.legacyframes and DAT_TAKISKART_L or DAT_TAKISKART
-					speed,weight = takis.stats[1],takis.stats[2]
+					speed, weight = takis.stats[1], takis.stats[2]
 				end
-				print("adding kart support for "..skin.name..", type="..tostring(type))
+				print("Adding kart support for \""..skin.name.."\", type: "..tostring(type))
 				data[skin.name] = {kartspeed = speed, kartweight = weight, translation = (type == DAT_SRB2KART) and "Palette_2.1_to_2.2" or nil, t = type}
 			end
 		end
@@ -86,6 +88,7 @@ freeslot("SPR2_KART", "SPR2_PLAY",
 
 "SKINCOLOR_SAPPHIRE2", "SKINCOLOR_RASPBERRY2", "SKINCOLOR_KETCHUP2", "SKINCOLOR_PERIWINKLE2", "SKINCOLOR_INVINCFLASH")
 freeslot("SPR2_STIN","SPR2_STIL","SPR2_STIR",    "SPR2_SLWN","SPR2_SLWL","SPR2_SLWR",      "SPR2_FSTN","SPR2_FSTL","SPR2_FSTR",    "SPR2_DRLN","SPR2_DRLO","SPR2_DRLI","SPR2_DRRN","SPR2_DRRO","SPR2_DRRI")
+freeslot("SPR2_JSKI")
 
 for i = 36,44
 	for ii = 0,12
@@ -1941,9 +1944,9 @@ local function anim(player)
 	end
 	mo.translation = dat.translation and dat.translation.."_"..R_GetNameByColor(mo.color) or nil
 	if player.kmd
+		mo.spriteyoffset = 0
 		local pain = player.kartstuff[k_spinouttimer] > 0
-		if dat.t == DAT_STAND
-			player.runspeed = fixdiv(K_GetKartSpeed(player),mo.scale)/5*3
+		local function DoRoll()
 			if player.kartstuff[k_drift] > 0
 				player.drawangle = $ + ANGLE_45
 			elseif player.kartstuff[k_drift] < 0
@@ -1953,15 +1956,44 @@ local function anim(player)
 			local target = K_GetKartTurnValue(player, player.driftturn)
 			if player.kartstuff[k_drift]
 				target = $ + player.kartstuff[k_drift]*200
+			end
+			mo.spriteroll = ease.linear(FU/6, mo.kart_spriteroll or 0, fixangle(target*FU/64))
+			mo.kart_spriteroll = mo.spriteroll
+		end
+		
+		if dat.t == DAT_STAND
+			player.runspeed = fixdiv(K_GetKartSpeed(player),mo.scale)/5*3
+			DoRoll()
+			if player.kartstuff[k_drift]
 				if mo.state ~= S_PLAY_ROLL
 					mo.state = S_PLAY_ROLL
 				end
 			elseif mo.state == S_PLAY_ROLL
 				mo.state = S_PLAY_STND
 			end
-			mo.spriteroll = ease.linear(FU/6,$,fixangle(target*FU/64))
 		elseif dat.t == DAT_RINGRACERS
 			K_RRMoveAnimation(player, pain)
+		elseif dat.t == DAT_RUSHCHARS then
+			local l = (leveltime%2)
+			mo.sprite2 = SPR2_JSKI
+			DoRoll()
+			if (player.speed == 0)
+				mo.frame = A + l
+-- 				if (player.driftturn < 0) --r
+-- 					mo.frame = E + l
+-- 				elseif (player.driftturn > 0) --l
+-- 					mo.frame = C + l
+-- 				elseif (player.driftturn == 0)
+-- 				end
+			// Run frames - S_KART_RUN1   S_KART_RUN1_L   S_KART_RUN1_R
+			elseif (player.speed > (20*mo.scale))
+				mo.frame = A
+				mo.spriteyoffset = l*FU / 2
+			// Walk frames - S_KART_WALK1   S_KART_WALK1_L   S_KART_WALK1_R
+			elseif (player.speed <= (20*mo.scale))
+				mo.frame = A
+				mo.spriteyoffset = l*FU
+			end
 		else
 			K_KartMoveAnimation(player, dat.t, pain)
 		end
