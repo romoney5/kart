@@ -34,44 +34,97 @@ local DAT_TAKISKART = 3 --takis kart
 local DAT_TAKISKART_L = 4 --takis kart legacy, used by soap and takis
 local DAT_RUSHCHARS = 5 --marine boat jetski bicycle motorbike retro
 
+--kart_skinbind freeslots an spr2 midgame in case a character doesn't use SPR2_PLAY or any other prefix
+local addedbinds = {}
+local processedbinds = {} --client-side
+local validatedbinds = {} --client-side
+local addedbinds_oldlen = #addedbinds
+
+addHook("NetVars", function(net) addedbinds = net($) end)
+
+COM_AddCommand("kart_skinbind", function(player, name)
+	if not name then
+		CONS_Printf(player, "kart_skinbind SPR2_<name>: Freeslots an SPR2 for usage with any broken Kart characters.\n"..
+			"Note that the SPR2_ prefix is appended automatically, so only input the following four characters (e.g. VANI).\n"..
+			"For the command to be usable, Kart RMX must be loaded after all other addons.")
+		return
+	elseif tostring(name):len() ~= 4 then
+		CONS_Printf(player, "Name length must be exactly 4 characters.\nNote that the SPR2_ prefix is appended automatically, so only input the following four characters (e.g. VANI).")
+		return
+	end
+	
+	table.insert(addedbinds, name)
+end)
+
 local data = {}
-data.sonic = {kartspeed = 8, kartweight = 2, translation = nil, t = DAT_TAKISKART}
-data.tails = {kartspeed = 2, kartweight = 2, translation = nil, t = DAT_TAKISKART}
+-- data.sonic = {kartspeed = 8, kartweight = 2, translation = nil, t = DAT_TAKISKART}
+-- data.tails = {kartspeed = 2, kartweight = 2, translation = nil, t = DAT_TAKISKART}
 
 if not TakisKart_KarterData
 	rawset(_G,"TakisKart_KarterData",{})
 	rawset(_G,"TakisKart_Karters",{})
 end
 
+TakisKart_KarterData.sonic = $ or {stats = {8, 2}, legacyframes = false}
+TakisKart_KarterData.tails = $ or {stats = {2, 2}, legacyframes = false}
+
 --automatically add compatibility for srb2kart character packs, addonloaded apparently is run before any skins are allocated
-addHook("ThinkFrame",do
-	for i=0, #skins-1
-		if not skins[i] break end
-		local skin = skins[i]
-		local t = TakisKart_KarterData and TakisKart_KarterData[skin.name] and (not data[skin.name] or not (data[skin.name].t == DAT_TAKISKART or data[skin.name].t == DAT_TAKISKART_L))
-		if not data[skin.name] or t
-			if (not data[skin.name] and (skin.sprites[SPR2_JSKI] or skin.sprites[SPR2_PLAY] or skin.sprites[SPR2_STIN])) or t
-				local type = DAT_STAND
-				local speed, weight = 5, 5
-				if skin.sprites[SPR2_JSKI].numframes > 0 type = DAT_RUSHCHARS end
-				if skin.sprites[SPR2_PLAY].numframes > 0 type = DAT_SRB2KART end
-				if skin.sprites[SPR2_STIN].numframes > 0 type = DAT_RINGRACERS end
-				local takis = TakisKart_KarterData and TakisKart_KarterData[skin.name]
-				if takis
-					type = takis.legacyframes and DAT_TAKISKART_L or DAT_TAKISKART
-					speed, weight = takis.stats[1], takis.stats[2]
-				end
-				print("Adding kart support for \""..skin.name.."\", type: "..tostring(type))
-				data[skin.name] = {kartspeed = speed, kartweight = weight, translation = (type == DAT_SRB2KART) and "Palette_2.1_to_2.2" or nil, t = type}
+addHook("ThinkFrame", do
+	if #addedbinds ~= addedbinds_oldlen then
+		for i = addedbinds_oldlen + 1, #addedbinds do
+			local name = addedbinds[i]
+			
+			rawset(_G, "KART_skinbind_name", name)
+			local success, spr = pcall(dofile, "KART_skinbind.lua")
+			
+			if not success then
+				--let the desyncs begin
+				print("Failed to find Lua file. For the command to be usable, Kart RMX must be loaded after all other addons.")
+				break
 			end
-		end
-		
-		if data[skin.name] and data[skin.name].spr2 == nil
-			local type = data[skin.name].t
-			local spr2 = (type == DAT_TAKISKART or type == DAT_TAKISKART_L) and SPR2_KART or ((type == DAT_RINGRACERS) and SPR2_STIN or ((type == DAT_SRB2KART) and SPR2_PLAY or SPR2_STND))
-			data[skin.name].spr2 = spr2
+			
+			table.insert(processedbinds, spr)
 		end
 	end
+
+	for i = 0, #skins - 1 do
+		local skin = skins[i]
+		if not skin then break end
+		
+		local t = TakisKart_KarterData and TakisKart_KarterData[skin.name] and (not data[skin.name] or not (data[skin.name].t == DAT_TAKISKART or data[skin.name].t == DAT_TAKISKART_L))
+		local bound = data[skin.name] and data[skin.name].t == DAT_STAND and #addedbinds ~= addedbinds_oldlen and not validatedbinds[i] --check again
+		if not data[skin.name] or t or bound
+			local type = DAT_STAND
+			local speed, weight = 5, 5
+			local spr2 = SPR2_STND
+			if skin.sprites[SPR2_JSKI].numframes > 0 type = DAT_RUSHCHARS spr2 = SPR2_JSKI end
+			if skin.sprites[SPR2_PLAY].numframes > 0 type = DAT_SRB2KART spr2 = SPR2_PLAY end
+			if skin.sprites[SPR2_STIN].numframes > 0 type = DAT_RINGRACERS spr2 = SPR2_STIN end
+			local takis = TakisKart_KarterData and TakisKart_KarterData[skin.name]
+			if takis
+				type = takis.legacyframes and DAT_TAKISKART_L or DAT_TAKISKART
+				speed, weight = takis.stats[1], takis.stats[2]
+				spr2 = SPR2_KART
+			end
+			
+			--still nothing?
+			if type == DAT_STAND then
+				for i, spr in ipairs(processedbinds) do --then go through all the custom spr2 binds
+					if skin.sprites[spr].numframes > 0 then --do they have it?
+						type = DAT_SRB2KART --for now
+						spr2 = spr --score!
+						validatedbinds[i] = true
+						break
+					end
+				end
+			end
+			
+			print("Adding kart support for \""..skin.name.."\", type: "..tostring(type))
+			data[skin.name] = {kartspeed = speed, kartweight = weight, translation = (type == DAT_SRB2KART) and "Palette_2.1_to_2.2" or nil, t = type, spr2 = spr2}
+		end
+	end
+	
+	addedbinds_oldlen = #addedbinds
 end)
 
 freeslot("SPR2_KART", "SPR2_PLAY",

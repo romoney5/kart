@@ -1,0 +1,1 @@
+if KART_skinbind_name then return freeslot("SPR2_"..(tostring(KART_skinbind_name):upper())) end

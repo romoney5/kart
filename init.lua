@@ -10,6 +10,7 @@ local directory = { "/",
 	"camera.lua",
 	"menu.lua",
 -- 	"translator.lua",
+	--KART_skinbind.lua is loaded via a command, see kartsonic.lua
 }
 
 local function load(dir, path)
