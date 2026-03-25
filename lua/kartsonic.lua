@@ -23,7 +23,7 @@ rawset(_G,"kart_rrsliptide", CV_RegisterVar{name = "kart_rrsliptide", defaultval
 rawset(_G,"kart_franticitems", CV_RegisterVar{name = "kart_franticitems", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR})
 rawset(_G,"kart_rubberband", CV_RegisterVar{name = "kart_rubberband", defaultvalue = "1.0", PossibleValue = {MIN = 0, MAX = INT32_MAX}, flags = CV_NETVAR|CV_FLOAT})
 local kart_rrmomentum = kart_booststacking--CV_RegisterVar{name = "kart_rrmomentum", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
-rawset(_G,"kart_debuggeneral", CV_RegisterVar{name = "kart_debuggeneral", defaultvalue = "On", PossibleValue = CV_OnOff, flags = CV_NETVAR})
+rawset(_G,"kart_debuggeneral", CV_RegisterVar{name = "kart_debug", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR})
 rawset(_G,"kart_haste", CV_RegisterVar{name = "kart_haste", defaultvalue = "On", PossibleValue = CV_OnOff, flags = CV_NETVAR})
 rawset(_G,"kart_retrocore", CV_RegisterVar{name = "kart_retrocore", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR})
 

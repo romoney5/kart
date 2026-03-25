@@ -59,10 +59,47 @@ rawset(_G,"kart_turneasing", CV_RegisterVar{name = "kart_turneasing", defaultval
 rawset(_G,"kart_cameraspeed", CV_RegisterVar{name = "kart_cameraspeed", defaultvalue = ".4", PossibleValue = {MIN = 0, MAX = FU}, flags = CV_FLOAT}) --.4 for ring racers
 rawset(_G,"kart_cameradist", CV_RegisterVar{name = "kart_cameradist", defaultvalue = "160", PossibleValue = {MIN = 0, MAX = INT32_MAX}, flags = CV_FLOAT}) --190 (210?) for ring racers
 rawset(_G,"kart_cameraheight", CV_RegisterVar{name = "kart_cameraheight", defaultvalue = "50", PossibleValue = {MIN = 0, MAX = INT32_MAX}, flags = CV_FLOAT}) --95 for ring racers
--- local toadd = 0
+
+--rebind controls!
+--there's already a playercmd hook so might as well put it here for now
+local kart_controlremapping = CV_RegisterVar{name = "kart_controlremapping", defaultvalue = "On", PossibleValue = CV_OnOff}
+local control = {
+	None = GC_NULL,
+	Jump = GC_JUMP, Spin = GC_SPIN,
+	Custom1 = GC_CUSTOM1, Custom2 = GC_CUSTOM2, Custom3 = GC_CUSTOM3,
+	Fire = GC_FIRE, FireNormal = GC_FIRENORMAL,
+	TossFlag = GC_TOSSFLAG,
+	--pretty sure these won't work at all on gamepad but i don't feel like testing again
+-- 	Forward = GC_FORWARD, Backward = GC_BACKWARD,
+}
+
+local defaults = {
+	drift = {"Spin", BT_SPIN},
+	item = {"Custom3", BT_CUSTOM3},
+	lookback = {"Custom2", BT_CUSTOM3},
+}
+
+local vars = {}
+
+for name, default in pairs(defaults) do
+	table.insert(vars, {control = name, cvar = CV_RegisterVar{name = "kart_control_"..name, defaultvalue = default[1], PossibleValue = control}})
+end
+
 --lag compensation & more
-addHook("PlayerCmd",function(player,cmd)
+addHook("PlayerCmd", function(player, cmd)
 	if not player.kart or not player.kartstuff or player.bot return end
+	
+	if kart_controlremapping.value then
+		local buttons = 0
+		for i, var in ipairs(vars) do
+			if input.gameControlDown(control[var.cvar.string]) then
+				buttons = $ | defaults[var.control][2]
+			end
+		end
+		
+		cmd.buttons = buttons
+	end
+	
 	local pn = player == secondarydisplayplayer and 2 or 1
 	local SLOWTURNTICS = kart_turneasing.value
 	local tspeed = KART_FULLTURN/2
