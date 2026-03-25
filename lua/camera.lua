@@ -62,6 +62,7 @@ rawset(_G,"kart_cameraheight", CV_RegisterVar{name = "kart_cameraheight", defaul
 
 --rebind controls!
 --there's already a playercmd hook so might as well put it here for now
+--TODO: allow a control to be bound to multiple buttons
 local kart_controlremapping = CV_RegisterVar{name = "kart_controlremapping", defaultvalue = "On", PossibleValue = CV_OnOff}
 local control = {
 	None = GC_NULL,
@@ -69,14 +70,23 @@ local control = {
 	Custom1 = GC_CUSTOM1, Custom2 = GC_CUSTOM2, Custom3 = GC_CUSTOM3,
 	Fire = GC_FIRE, FireNormal = GC_FIRENORMAL,
 	TossFlag = GC_TOSSFLAG,
+	LookUp = GC_LOOKUP, LookDown = GC_LOOKDOWN,
+	WeaponNext = GC_WEAPONNEXT, WeaponPrev = GC_WEAPONPREV,
+	Weapon1 = GC_WEPSLOT1, Weapon2 = GC_WEPSLOT2, Weapon3 = GC_WEPSLOT3,
+	Weapon4 = GC_WEPSLOT4, Weapon5 = GC_WEPSLOT5, Weapon6 = GC_WEPSLOT6,
+	Weapon7 = GC_WEPSLOT7,
 	--pretty sure these won't work at all on gamepad but i don't feel like testing again
 -- 	Forward = GC_FORWARD, Backward = GC_BACKWARD,
 }
 
+--{default control name, button that it will be remapped to internally}
 local defaults = {
 	drift = {"Spin", BT_SPIN},
 	item = {"Custom3", BT_CUSTOM3},
 	lookback = {"Custom2", BT_CUSTOM3},
+	
+	aimup = {"LookUp", BT_CAMLEFT},
+	aimdown = {"LookDown", BT_CAMRIGHT},
 }
 
 local vars = {}
@@ -728,7 +738,7 @@ addHook("PostThinkFrame",do
 			camobj.angle = mo.angle
 			localangle = mo.angle
 			localkartangle[pn] = mo.angle
-			localaiming = player.aiming
+-- 			localaiming = player.aiming
 			camobj.chase = camera.chase
 			for i=1,TICRATE
 				P_MoveChaseCamera(player, camobj, true)
@@ -745,7 +755,7 @@ addHook("PostThinkFrame",do
 			if player.cmd.latency <= 1 or not sync.value --camera "syncing" disabled
 				localangle = mo.kartangle
 			end
-			localaiming = player.aiming
+-- 			localaiming = player.aiming
 			if P_MobjFlip(mo)>0
 				camobj.z = $+20*FU-4*mo.scale
 			else

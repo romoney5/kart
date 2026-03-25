@@ -2338,7 +2338,7 @@ addHook("PlayerThink",function(player)
 				player.awayviewtics = 0
 			end
 			
-			player.kartstuff[k_throwdir] = (player.kmd.buttons & BT_JUMP and 1 or (player.kmd.buttons & BT_SPIN and -1 or 0))
+			player.kartstuff[k_throwdir] = (player.kmd.buttons & BT_CAMLEFT and 1 or (player.kmd.buttons & BT_CAMRIGHT and -1 or 0))
 			
 			if (onground and player.kartstuff[k_pogospring])
 				if (P_MobjFlip(mo)*mo.momz <= 0)
