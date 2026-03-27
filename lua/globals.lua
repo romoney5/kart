@@ -155,4 +155,6 @@ rawset(_G,"k_numsneakers", 80)		// Number of stacked sneaker effects
 rawset(_G,"k_handleboost",81)
 rawset(_G,"k_numboosts",82)
 
-rawset(_G,"k_kartstuffamount", k_numboosts)
+rawset(_G,"k_driftspeed",83) --speed multiplier for drift boosts, homemade ring racers version
+
+rawset(_G,"k_kartstuffamount", k_driftspeed)

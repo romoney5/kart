@@ -17,6 +17,7 @@ rawset(_G,"itemtime", 8*TICRATE)
 local kart_preservebumps = CV_RegisterVar{name = "kart_preservebumps", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
 local kart_keeplandspeed = CV_RegisterVar{name = "kart_keeplandspeed", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
 local kart_triangledash = CV_RegisterVar{name = "kart_triangledash", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
+local kart_rrdrift = kart_triangledash
 rawset(_G,"kart_booststacking", CV_RegisterVar{name = "kart_booststacking", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}) --boost snacking
 rawset(_G,"kart_rrpoweritems", CV_RegisterVar{name = "kart_rrpoweritems", defaultvalue = "Off", PossibleValue = {Off = 0, On = 1, Bonus = 2}, flags = CV_NETVAR})
 rawset(_G,"kart_rrsliptide", CV_RegisterVar{name = "kart_rrsliptide", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR})
@@ -736,7 +737,8 @@ local function K_GetKartBoostPower(player)
 	end
 
 	if (player.kartstuff[k_driftboost]) // Drift Boost
-		ADDBOOST(FRACUNIT/4, 4*FRACUNIT); // + 25% top speed, + 400% acceleration
+		local speed = player.kartstuff[k_driftspeed]
+		ADDBOOST(speed/4, 4*speed); // + 25% top speed, + 400% acceleration
 	end
 	
 	if (player.kartstuff[k_ringboost]) // Ring Boost
@@ -1086,6 +1088,25 @@ local function K_GetKartDriftSparkValue(player)
 end
 rawset(_G,"K_GetKartDriftSparkValue",K_GetKartDriftSparkValue)
 
+local function GetDriftValues(player)
+	local dsone = K_GetKartDriftSparkValue(player)
+	
+	if kart_rrdrift.value then
+		return {
+			{charge = dsone, boost = 20, speed = FU, sfx = {sfx_zoom}, color = SKINCOLOR_SAPPHIRE2, triangle_boost = FU / 3},
+			{charge = dsone * 2, boost = 50, speed = FU, sfx = {sfx_zoom, sfx_s3k81}, color = SKINCOLOR_KETCHUP2, triangle_boost = FU / 2},
+			{charge = dsone * 3, boost = 80, speed = FU * 3 / 2, sfx = {sfx_zoom, sfx_s3k81, sfx_cdfm40}, color = SKINCOLOR_PURPLE, triangle_boost = FU},
+			{charge = dsone * 4, boost = 125, speed = FU * 3 / 2, sfx = {sfx_zoom, sfx_kc4d, sfx_s3kc4l, sfx_s3k81}, color = getrainbow(), triangle_boost = FU * 5 / 4},
+		}
+	else
+		return {
+			{charge = dsone, boost = 20, speed = FU, sfx = {sfx_zoom}, color = SKINCOLOR_SAPPHIRE2, triangle_boost = FU / 3},
+			{charge = dsone * 2, boost = 50, speed = FU, sfx = {sfx_zoom}, color = SKINCOLOR_KETCHUP2, triangle_boost = FU / 2},
+			{charge = dsone * 4, boost = 125, speed = FU, sfx = {sfx_zoom}, color = getrainbow(), triangle_boost = FU * 5 / 4},
+		}
+	end
+end
+
 local function K_SpawnDriftSparks(player)
 	local newx;
 	local newy;
@@ -1107,7 +1128,9 @@ local function K_SpawnDriftSparks(player)
 -- 		return;
 -- 	end
 	
-	if (not player.kartstuff[k_drift] or player.kartstuff[k_driftcharge] < K_GetKartDriftSparkValue(player))
+	local sparks = GetDriftValues(player)
+	
+	if (not player.kartstuff[k_drift] or player.kartstuff[k_driftcharge] < sparks[1].charge)
 		return;
 	end
 	
@@ -1127,17 +1150,15 @@ local function K_SpawnDriftSparks(player)
 		spark.momx = player.mo.momx/2;
 		spark.momy = player.mo.momy/2;
 		//spark.momz = player.mo.momz/2;
-
-		if (player.kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*4)
-			spark.color = getrainbow();
-		elseif (player.kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(player)*2)
-			if (player.kartstuff[k_driftcharge] <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
-				spark.color = SKINCOLOR_RASPBERRY2; // transition
-			else
-				spark.color = SKINCOLOR_KETCHUP2;
+		
+		for i = #sparks, 1, -1 do
+			local spark2 = sparks[i] --there can only be one spark
+			
+			if player.kartstuff[k_driftcharge] >= spark2.charge then
+				spark.color = spark2.color
+				
+				break
 			end
-		else
-			spark.color = SKINCOLOR_SAPPHIRE2;
 		end
 
 		if ((player.kartstuff[k_drift] > 0 and driftturn > 0) // Inward drifts
@@ -1243,9 +1264,11 @@ end
 
 local function K_KartDrift(player, onground)
 	local minspeed = (10 * player.mo.scale);
-	local dsone = K_GetKartDriftSparkValue(player);
-	local dstwo = dsone*2;
-	local dsthree = dstwo*2;
+-- 	local dstwo = dsone*2;
+-- 	local dsthree = dsone*4;
+	--rr gray spark thrusts speed/8
+	--rr blue spark thrusts speed
+	local sparks = GetDriftValues(player)
 	local driftturn = player.driftturn
 
 	// Grown players taking yellow spring panels will go below minspeed for one tic,
@@ -1261,42 +1284,36 @@ local function K_KartDrift(player, onground)
 	// Drift Release (Moved here so you can't "chain" drifts)
 	if ((player.kartstuff[k_drift] != -5 and player.kartstuff[k_drift] != 5) and (onground or kart_triangledash.value))
 		// or (player.kartstuff[k_drift] >= 1 and player.kartstuff[k_turndir] != 1) or (player.kartstuff[k_drift] <= -1 and player.kartstuff[k_turndir] != -1))
-		if player.kartstuff[k_driftcharge] < dsone
+		if player.kartstuff[k_driftcharge] < sparks[1].charge
 			--nothing
 		else
 			local ang = R_PointToAngle2(0,0,player.mo.momx,player.mo.momy)
-			S_StartSound(player.mo, sfx_s23c);
+-- 			S_StartSound(player.mo, sfx_zoom);
 			local factor = FU
 			if kart_haste.value
 				local accel = max(9-player.kartspeed-player.kartweight/2,0)
 				factor = FU + accel*(FU*4/100)
 			end
 			//K_SpawnDashDustRelease(player);
-			if player.kartstuff[k_driftcharge] >= dsone and player.kartstuff[k_driftcharge] < dstwo
-				player.kartstuff[k_driftboost] = max($,fixmul(20*FU,factor)/FU);
-				if kart_triangledash.value
-					if not onground
-						--rr gray spark thrusts speed/8
-						P_Thrust(player.mo,ang,player.speed/3)
-						player.mo.momz = $ - player.speed/2*P_MobjFlip(player.mo)
+			for i = #sparks, 1, -1 do
+				local spark = sparks[i]
+				
+				if player.kartstuff[k_driftcharge] >= spark.charge then
+					player.kartstuff[k_driftboost] = max($, FixedMul(spark.boost * FU, factor) / FU)
+					player.kartstuff[k_driftspeed] = spark.speed
+					
+					for i, sfx in ipairs(spark.sfx) do
+						S_StartSoundAtVolume(player.mo, sfx, 255 - (i - 1) * 30)
 					end
-				end
-			elseif player.kartstuff[k_driftcharge] < dsthree
-				player.kartstuff[k_driftboost] = max($,fixmul(50*FU,factor)/FU);
-				if kart_triangledash.value
-					if not onground
-						P_Thrust(player.mo,ang,player.speed/2)
-						player.mo.momz = $ - player.speed/2*P_MobjFlip(player.mo)
+					
+					if kart_triangledash.value
+						if not onground
+							P_Thrust(player.mo, ang, FixedMul(player.speed, spark.triangle_boost))
+							player.mo.momz = $ - player.speed / 2 * P_MobjFlip(player.mo)
+						end
 					end
-				end
-			elseif player.kartstuff[k_driftcharge] >= dsthree
-				player.kartstuff[k_driftboost] = max($,fixmul(125*FU,factor)/FU);
-				if kart_triangledash.value
-					if not onground
-						--rr blue spark thrusts speed
-						P_Thrust(player.mo,ang,player.speed/4*5)
-						player.mo.momz = $ - player.speed/2*P_MobjFlip(player.mo)
-					end
+					
+					break
 				end
 			end
 		end
@@ -1369,17 +1386,23 @@ local function K_KartDrift(player, onground)
 			end
 
 			// Sound whenever you get a different tier of sparks
-			if (P_IsLocalPlayer(player) // UGHGHGH...
-				and ((player.kartstuff[k_driftcharge] < dsone and player.kartstuff[k_driftcharge]+driftadditive >= dsone)
-				or (player.kartstuff[k_driftcharge] < dstwo and player.kartstuff[k_driftcharge]+driftadditive >= dstwo)
-				or (player.kartstuff[k_driftcharge] < dsthree and player.kartstuff[k_driftcharge]+driftadditive >= dsthree)))
-				//S_StartSound(player.mo, sfx_s3ka2);
-				S_StartSoundAtVolume(player.mo, sfx_s3ka2, 192); // Ugh...
+			for i = #sparks, 1, -1 do
+				local spark = sparks[i]
+				
+				if player.kartstuff[k_driftcharge] < spark.charge and player.kartstuff[k_driftcharge] + driftadditive >= spark.charge then
+					//S_StartSound(player.mo, sfx_s3ka2);
+					S_StartSoundAtVolume(player.mo, sfx_s3ka2, 192); // Ugh...
+-- 					for i, sfx in ipairs(spark.sfx) do
+-- 						S_StartSoundAtVolume(player.mo, sfx, 192)
+-- 					end
+					
+					break
+				end
 			end
 		end
 		
 		// This spawns the drift sparks
-		if (player.kartstuff[k_driftcharge] + driftadditive >= dsone) and (onground or kart_triangledash.value)
+		if (player.kartstuff[k_driftcharge] + driftadditive >= sparks[1].charge) and (onground or kart_triangledash.value)
 			K_SpawnDriftSparks(player);
 		end
 		
@@ -3446,15 +3469,19 @@ addHook("MobjThinker",function(mobj)
 
 			mobj.angle = travelangle - ((ANGLE_90/5)*mobj.target.player.kartstuff[k_drift]);
 			mobj.scale = mobj.target.scale;
-
-			if (mobj.target.player.kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(mobj.target.player)*4)
-				mobj.color = getrainbow();
-			elseif (mobj.target.player.kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(mobj.target.player)*2)
-				mobj.color = SKINCOLOR_KETCHUP2;
-			elseif (mobj.target.player.kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(mobj.target.player))
-				mobj.color = SKINCOLOR_SAPPHIRE2;
-			else
-				mobj.color = SKINCOLOR_SILVER;
+			
+			mobj.color = SKINCOLOR_SILVER
+			
+			local sparks = GetDriftValues(mobj.target.player)
+			
+			for i = #sparks, 1, -1 do
+				local spark = sparks[i]
+				
+				if mobj.target.player.kartstuff[k_driftcharge] >= spark.charge then
+					mobj.color = spark.color
+					
+					break
+				end
 			end
 
 			if (not S_SoundPlaying(mobj, sfx_cdfm17))
