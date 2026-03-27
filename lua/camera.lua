@@ -72,9 +72,9 @@ local control = {
 	TossFlag = GC_TOSSFLAG,
 	LookUp = GC_LOOKUP, LookDown = GC_LOOKDOWN,
 	WeaponNext = GC_WEAPONNEXT, WeaponPrev = GC_WEAPONPREV,
-	Weapon1 = GC_WEPSLOT1, Weapon2 = GC_WEPSLOT2, Weapon3 = GC_WEPSLOT3,
-	Weapon4 = GC_WEPSLOT4, Weapon5 = GC_WEPSLOT5, Weapon6 = GC_WEPSLOT6,
-	Weapon7 = GC_WEPSLOT7,
+-- 	Weapon1 = GC_WEPSLOT1, Weapon2 = GC_WEPSLOT2, Weapon3 = GC_WEPSLOT3,
+-- 	Weapon4 = GC_WEPSLOT4, Weapon5 = GC_WEPSLOT5, Weapon6 = GC_WEPSLOT6,
+-- 	Weapon7 = GC_WEPSLOT7,
 	--pretty sure these won't work at all on gamepad but i don't feel like testing again
 -- 	Forward = GC_FORWARD, Backward = GC_BACKWARD,
 }
@@ -83,7 +83,8 @@ local control = {
 local defaults = {
 	drift = {"Spin", BT_SPIN},
 	item = {"Custom3", BT_CUSTOM3},
-	lookback = {"Custom2", BT_CUSTOM3},
+	lookback = {"Custom2", BT_CUSTOM2},
+	stomp = {"Custom1", BT_CUSTOM1},
 	
 	aimup = {"LookUp", BT_CAMLEFT},
 	aimdown = {"LookDown", BT_CAMRIGHT},
@@ -100,7 +101,7 @@ addHook("PlayerCmd", function(player, cmd)
 	if not player.kart or not player.kartstuff or player.bot return end
 	
 	if kart_controlremapping.value then
-		local buttons = 0
+		local buttons = cmd.buttons & BT_WEAPONMASK
 		for i, var in ipairs(vars) do
 			if input.gameControlDown(control[var.cvar.string]) then
 				buttons = $ | defaults[var.control][2]
@@ -789,25 +790,4 @@ addHook("PostThinkFrame",do
 --			local vy = mo.y + shifty + fixmul(sin(angle),dist)
 --			local f1,f2 = vx-x,vy-y
 --			local aiming2 = R_PointToAngle2(0,z,fixhypot(f1,f2),mo.z+P_GetPlayerHeight(player))
---			aiming2 = $ + (aiming < ANGLE_180 and aiming/2 or InvAngle(InvAngle(aiming)/2))
---			aiming2 = G_ClipAimingPitch(aiming2)
---			aiming = $ + (aiming - aiming2)>>3
---			if aiming > 0 aiming = $ - ANGLE_45 end
---			print(aiming2/ANG1,aiming/ANG1)
---			print(anglefix(aiming)/FU,anglefix(player.aiming)/FU)
---			aiming = R_PointToAngle2(0,z,fixhypot(f1,f2),mo.z+P_GetPlayerHeight(player))
---			camobj.angle = ease.linear(cam_speed,angle)
-			player.awayviewaiming = fixangle(camobj.aiming)--ease.linear(cam_speed,G_ClipAimingPitch(aiming))---ANG1*58/10)
---			print(z/FU)
---			camobj.momz = FU
---			cam.z = z
---			cam.angle = angle
---			cam.aiming = aiming
---			cam.radius = 0
---			cam.height = 0
-		end
---		camera.angle = angle
---		camera.aiming = aiming
---		P_TeleportCameraMove(camera,x,y,z)
-	end
-end)
+--			aiming2 = $ + (aiming < ANGLE_180 and aiming/2 or InvAn
