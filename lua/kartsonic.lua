@@ -16,7 +16,7 @@ rawset(_G,"itemtime", 8*TICRATE)
 
 local kart_preservebumps = CV_RegisterVar{name = "kart_preservebumps", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
 local kart_keeplandspeed = CV_RegisterVar{name = "kart_keeplandspeed", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
-local kart_triangledash = CV_RegisterVar{name = "kart_triangledash", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}
+local kart_triangledash = CV_RegisterVar{name = "kart_triangledash", defaultvalue = "On", PossibleValue = CV_OnOff, flags = CV_NETVAR}
 local kart_rrdrift = kart_triangledash
 rawset(_G,"kart_booststacking", CV_RegisterVar{name = "kart_booststacking", defaultvalue = "Off", PossibleValue = CV_OnOff, flags = CV_NETVAR}) --boost snacking
 rawset(_G,"kart_rrpoweritems", CV_RegisterVar{name = "kart_rrpoweritems", defaultvalue = "Off", PossibleValue = {Off = 0, On = 1, Bonus = 2}, flags = CV_NETVAR})
