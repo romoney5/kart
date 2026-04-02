@@ -1093,16 +1093,16 @@ local function GetDriftValues(player)
 	
 	if kart_rrdrift.value then
 		return {
-			{charge = dsone, boost = 20, speed = FU, sfx = {sfx_zoom}, color = SKINCOLOR_SAPPHIRE2, triangle_boost = FU / 3},
-			{charge = dsone * 2, boost = 50, speed = FU, sfx = {sfx_zoom, sfx_s3k81}, color = SKINCOLOR_KETCHUP2, triangle_boost = FU / 2},
-			{charge = dsone * 3, boost = 80, speed = FU * 3 / 2, sfx = {sfx_zoom, sfx_s3k81, sfx_cdfm40}, color = SKINCOLOR_PURPLE, triangle_boost = FU},
-			{charge = dsone * 4, boost = 125, speed = FU * 3 / 2, sfx = {sfx_zoom, sfx_kc4d, sfx_s3kc4l, sfx_s3k81}, color = getrainbow(), triangle_boost = FU * 5 / 4},
+			{charge = dsone, boost = 20, speed = FU, sfx = {sfx_zoom}, charge_sfx = {sfx_s3ka2}, color = SKINCOLOR_SAPPHIRE2, triangle_boost = FU / 3},
+			{charge = dsone * 2, boost = 50, speed = FU, sfx = {sfx_zoom, sfx_kc5b}, charge_sfx = {sfx_s3ka2, sfx_s3ka6}, color = SKINCOLOR_KETCHUP2, triangle_boost = FU / 2},
+			{charge = dsone * 3, boost = 80, speed = FU * 3 / 2, sfx = {sfx_zoom, sfx_kc5b, sfx_s3k45}, charge_sfx = {sfx_s3ka2, sfx_s3ka6, sfx_cdfm40}, color = SKINCOLOR_PURPLE, triangle_boost = FU},
+			{charge = dsone * 4, boost = 125, speed = FU * 3 / 2, sfx = {sfx_zoom, sfx_kc4d, sfx_s3kc4l, sfx_kc5b}, charge_sfx = {sfx_s3ka2, sfx_s3ka6, sfx_cdfm40, sfx_s3k9c}, color = getrainbow(), triangle_boost = FU * 5 / 4},
 		}
 	else
 		return {
-			{charge = dsone, boost = 20, speed = FU, sfx = {sfx_zoom}, color = SKINCOLOR_SAPPHIRE2, triangle_boost = FU / 3},
-			{charge = dsone * 2, boost = 50, speed = FU, sfx = {sfx_zoom}, color = SKINCOLOR_KETCHUP2, triangle_boost = FU / 2},
-			{charge = dsone * 4, boost = 125, speed = FU, sfx = {sfx_zoom}, color = getrainbow(), triangle_boost = FU * 5 / 4},
+			{charge = dsone, boost = 20, speed = FU, sfx = {sfx_zoom}, charge_sfx = {sfx_s3ka2}, color = SKINCOLOR_SAPPHIRE2, triangle_boost = FU / 3},
+			{charge = dsone * 2, boost = 50, speed = FU, sfx = {sfx_zoom, sfx_kc5b}, charge_sfx = {sfx_s3ka2, sfx_s3ka6}, color = SKINCOLOR_KETCHUP2, triangle_boost = FU / 2},
+			{charge = dsone * 4, boost = 125, speed = FU, sfx = {sfx_zoom, sfx_kc5b, sfx_s3kc4l}, charge_sfx = {sfx_s3ka2, sfx_s3ka6, sfx_cdfm40}, color = getrainbow(), triangle_boost = FU * 5 / 4},
 		}
 	end
 end
@@ -1391,10 +1391,10 @@ local function K_KartDrift(player, onground)
 				
 				if player.kartstuff[k_driftcharge] < spark.charge and player.kartstuff[k_driftcharge] + driftadditive >= spark.charge then
 					//S_StartSound(player.mo, sfx_s3ka2);
-					S_StartSoundAtVolume(player.mo, sfx_s3ka2, 192); // Ugh...
--- 					for i, sfx in ipairs(spark.sfx) do
--- 						S_StartSoundAtVolume(player.mo, sfx, 192)
--- 					end
+-- 					S_StartSoundAtVolume(player.mo, sfx_s3ka2, 192); // Ugh...
+					for i, charge_sfx in ipairs(spark.charge_sfx) do
+						S_StartSoundAtVolume(player.mo, charge_sfx, 192)
+					end
 					
 					break
 				end
